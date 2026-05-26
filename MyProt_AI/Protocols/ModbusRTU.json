@@ -18,7 +18,7 @@
         "03",
         "{StartAddress:X4}",
         "{RegisterCount:X4}",
-        "{CRC16Modbus:X4}"
+        "{CRC:CRC16Modbus:X4}"
       ],
       "responseParser": {
         "validCondition": "resp[1] == 0x03",
@@ -35,7 +35,7 @@
         "01",
         "{StartAddress:X4}",
         "{BitCount:X4}",
-        "{CRC16Modbus:X4}"
+        "{CRC:CRC16Modbus:X4}"
       ],
       "responseParser": {
         "validCondition": "resp[1] == 0x01",
@@ -45,6 +45,5 @@
         "byteOrder": "BigEndian"
       }
     }
-  },
-  "builtInFunctions": ["CRC16Modbus"]
+  }
 }

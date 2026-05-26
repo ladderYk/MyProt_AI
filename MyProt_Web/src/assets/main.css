@@ -1,0 +1,37 @@
+body {
+  margin: 0;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 
+               'Microsoft YaHei', Arial, sans-serif;
+}
+
+/* 全局卡片圆角 */
+.el-card {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+/* 表格头部背景 */
+.el-table th {
+  background-color: #f5f7fa;
+}
+
+/* 主按钮渐变 */
+.el-button--primary {
+  background: linear-gradient(135deg, #409EFF, #337ECC);
+  border: none;
+}
+
+/* 菜单项过渡 */
+.el-menu-item {
+  transition: all 0.3s;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .app-aside {
+    width: 64px !important;
+  }
+  .el-row {
+    display: block;
+  }
+}

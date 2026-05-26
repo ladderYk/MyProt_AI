@@ -68,6 +68,5 @@
         "valueType": "Empty"
       }
     }
-  },
-  "builtInFunctions": [ "auto", "calc" ]
+  }
 }
