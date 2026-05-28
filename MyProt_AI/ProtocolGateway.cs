@@ -30,7 +30,7 @@ namespace MyProt_AI
                     {
                         var proto = ((JObject)JToken.ReadFrom(reader)).ToObject<ProtocolConfig>();
 
-                        _protocols[proto.ProtocolName] = proto;
+                        _protocols[proto.protocolName] = proto;
                     }
                 }
             }
@@ -43,40 +43,43 @@ namespace MyProt_AI
                     var root = ((JObject)JToken.ReadFrom(reader)).ToObject<ConfigRoot>();
 
                     foreach (var dev in root.Devices)
-                        _devices[dev.Id] = dev;
+                        _devices[dev.id] = dev;
                     _tags = root.Tags;
                 }
             }
            
         }
-
+        public List<ProtocolConfig> getList()
+        {
+            return _protocols.Values.ToList();
+        }
         public TagValue ReadTagAsync(string tagName)
         {
 
-            var tag = _tags.First(t => t.TagName == tagName);
-            var device = _devices[tag.DeviceId];
-            var protocol = _protocols[device.Protocol];          // 按协议名查询
-            var operation = protocol.Operations[tag.Operation];
+            var tag = _tags.First(t => t.tagName == tagName);
+            var device = _devices[tag.deviceId];
+            var protocol = _protocols[device.protocol];          // 按协议名查询
+            var operation = protocol.operations[tag.operation];
 
             // 获取或创建 TCP 通道
             var channel = GetChannelAsync(device, protocol);
 
             Thread.Sleep(200);
             // 构建请求
-            var request = ProtocolEngine.BuildRequest(operation.RequestTemplate, tag.Variables);
+            var request = ProtocolEngine.BuildRequest(operation.requestTemplate, tag.variables);
             //var request = ProtocolEngine.BuildRequest(operation.RequestTemplate, tag.Variables);
             // 发送并接收
             byte[] response = channel.SendReceiveAsync(request);
 
             // 解析响应
-            var rawData = ProtocolEngine.ParseResponse(response, operation.ResponseParser);
+            var rawData = ProtocolEngine.ParseResponse(response, operation.responseParser);
 
             // 转换为最终类型
             //object finalValue = ConvertToFinalType(rawData as byte[], tag.FinalType);
 
             return new TagValue
             {
-                TagName = tag.TagName,
+                TagName = tag.tagName,
                 Value = rawData,
                 Timestamp = DateTime.UtcNow,
                 Quality = QualityCode.Good
@@ -85,27 +88,27 @@ namespace MyProt_AI
 
         private TcpChannel GetChannelAsync(DeviceConfig device, ProtocolConfig protocol)
         {
-            if (!_channels.ContainsKey(device.Id))
+            if (!_channels.ContainsKey(device.id))
             {
-                var channel = new TcpChannel(protocol.Framing);
+                var channel = new TcpChannel(protocol.framing);
 
-                int port = device.Port > 0 ? device.Port : protocol.Transport.DefaultPort;
-                channel.ConnectAsync(device.Host, port, protocol.Connection.ResponseTimeoutMs);
+                int port = device.port > 0 ? device.port : protocol.transport.defaultPort;
+                channel.ConnectAsync(device.host, port, protocol.connection.responseTimeoutMs);
                 // --- 新增：执行协议握手 ---
-                if (protocol.Handshake != null)
+                if (protocol.handshake != null)
                 {
-                    foreach (var step in protocol.Handshake)
+                    foreach (var step in protocol.handshake)
                     {
-                        byte[] req = ProtocolEngine.BuildRequest(step.RequestTemplate, new Dictionary<string, object>());
-                        byte[] resp = channel.SendReceiveAsync(req, step.Framing);
-                        if (!Validate(step.ValidCondition, resp))
-                            throw new Exception($"握手失败: {step.Name}");
+                        byte[] req = ProtocolEngine.BuildRequest(step.requestTemplate, new Dictionary<string, object>());
+                        byte[] resp = channel.SendReceiveAsync(req, step.framing);
+                        if (!Validate(step.validCondition, resp))
+                            throw new Exception($"握手失败: {step.name}");
                     }
                 }
-                _channels[device.Id] = channel;
+                _channels[device.id] = channel;
             }
            
-            return _channels[device.Id];
+            return _channels[device.id];
         }
         public static bool Validate(string condition, byte[] resp)
         {

@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MyProt_AI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+          xmlns:Wpf="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf" 
+        Title="MyProt_AI" Height="800" Width="1400">
     <Grid>
-        <Button Click="Button_Click">cs</Button>
+        <Wpf:WebView2 Name="webView" Source="http://127.0.0.1:5090/" />
     </Grid>
 </Window>

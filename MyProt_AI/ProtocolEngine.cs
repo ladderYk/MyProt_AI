@@ -110,29 +110,29 @@ namespace MyProt_AI
         public static object ParseResponse(byte[] response, ResponseParserConfig parser)
         {
             // 验证条件
-            if (!string.IsNullOrEmpty(parser.ValidCondition))
+            if (!string.IsNullOrEmpty(parser.validCondition))
             {
-                if (!EvaluateCondition(parser.ValidCondition, response))
-                    throw new Exception($"Response invalid: {parser.ValidCondition}");
+                if (!EvaluateCondition(parser.validCondition, response))
+                    throw new Exception($"Response invalid: {parser.validCondition}");
             }
 
-            if (parser.ValueType == "Empty")
+            if (parser.valueType == "Empty")
                 return null;
 
             // 提取数据段
-            int dataLen = EvaluateExpression(parser.DataLengthExpr, response);
+            int dataLen = EvaluateExpression(parser.dataLengthExpr, response);
             if (dataLen == 0)
                 return Array.Empty<byte>();
 
             byte[] data = new byte[dataLen];
-            Buffer.BlockCopy(response, parser.DataStartIndex, data, 0, dataLen);
+            Buffer.BlockCopy(response, parser.dataStartIndex, data, 0, dataLen);
 
-            if (parser.ValueType == "ByteArray")
+            if (parser.valueType == "ByteArray")
                 return data;
-            if (parser.ValueType == "UInt16" && dataLen >= 2)
+            if (parser.valueType == "UInt16" && dataLen >= 2)
                 return (data[0] << 8) | data[1];
 
-            throw new NotSupportedException($"ValueType {parser.ValueType} not supported");
+            throw new NotSupportedException($"ValueType {parser.valueType} not supported");
         }
 
         // ---- 辅助方法 ----

@@ -65,14 +65,14 @@ namespace MyProt_AI
 
             if (framing == null)
                 throw new InvalidOperationException("未提供帧解析配置");
-            switch (framing.Type)
+            switch (framing.type)
             {
                 case "Fixed":
-                    return ReadFixedAsync(framing.FixedLength.Value);
+                    return ReadFixedAsync(framing.fixedLength.Value);
                 case "LengthField":
                     return ReadLengthFieldFrameAsync(framing);
                 default:
-                    throw new NotSupportedException($"不支持的 Framing 类型: {framing.Type}");
+                    throw new NotSupportedException($"不支持的 Framing 类型: {framing.type}");
             }
 
         }
@@ -89,29 +89,29 @@ namespace MyProt_AI
         private byte[] ReadLengthFieldFrameAsync(FramingConfig f)
         {
             // 先读入最少字节：至少包含长度字段的完整部分
-            int minHeader = f.LengthFieldOffset.Value + f.LengthFieldLength.Value;
+            int minHeader = f.lengthFieldOffset.Value + f.lengthFieldLength.Value;
             byte[] header = new byte[minHeader];
             ReadExactAsync(header, 0, minHeader);
 
             // 从 header 中提取长度值
             long lengthValue = 0;
-            for (int i = 0; i < f.LengthFieldLength; i++)
+            for (int i = 0; i < f.lengthFieldLength; i++)
             {
-                int pos = f.LengthFieldOffset.Value + i;
-                if (f.ByteOrder == "BigEndian" || f.ByteOrder == null)
+                int pos = f.lengthFieldOffset.Value + i;
+                if (f.byteOrder == "BigEndian" || f.byteOrder == null)
                     lengthValue = (lengthValue << 8) | header[pos];
                 else
                     lengthValue |= (long)header[pos] << (8 * i);
             }
 
             int totalLength;
-            if (f.LengthIncludesHeader == true)
+            if (f.lengthIncludesHeader == true)
             {
                 totalLength = (int)lengthValue;       // 长度值已包含整个帧
             }
             else
             {
-                totalLength = f.HeaderLength.Value + (int)lengthValue; // 头固定长度 + 数据长度
+                totalLength = f.headerLength.Value + (int)lengthValue; // 头固定长度 + 数据长度
             }
 
             // 若还没读够头部的剩余部分，继续读

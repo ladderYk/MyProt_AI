@@ -38,10 +38,10 @@
                 <el-table-column prop="transport.defaultPort" label="默认端口" width="100" />
                 <el-table-column label="初始化步骤" min-width="120">
                     <template #default="{ row }">
-                        <el-tag v-for="step in row.initSequence" :key="step" size="small" style="margin-right: 4px;">
-                            {{ step }}
+                        <el-tag v-for="step in row.handshake" :key="step" size="small" style="margin-right: 4px;">
+                            {{ step.name }}
                         </el-tag>
-                        <span v-if="!row.initSequence || row.initSequence.length === 0" style="color: #999;">无</span>
+                        <span v-if="!row.handshake || row.handshake.length === 0" style="color: #999;">无</span>
                     </template>
                 </el-table-column>
                 <el-table-column label="操作数量" width="100" align="center">
@@ -76,6 +76,7 @@ import { ref, reactive, onMounted } from 'vue'
 // import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ProtocolEditor from './ProtocolEditor.vue'
+import { getProtocolList, delProtocol } from '../utils/dotnet'
 
 const protocolId = ref("");
 const protocolForm = ref({});
@@ -186,77 +187,6 @@ const protocolList = ref([{
             }
         }
     }
-}, {
-    "protocolName": "ModbusTCP",
-    "transport": {
-        "type": "Tcp",
-        "defaultPort": 502
-    },
-    "framing": {
-        "type": "LengthField",
-        "lengthFieldOffset": 4,
-        "lengthFieldLength": 2,
-        "lengthIncludesHeader": false,
-        "byteOrder": "BigEndian",
-        "headerLength": 6
-    },
-    "connection": {
-        "responseTimeoutMs": 1000,
-        "interFrameDelayMs": 0
-    },
-    "operations": {
-        "ReadHoldingRegisters": {
-            "requestTemplate": [
-                "{TransactionID:auto:X4}",
-                "00 00",
-                "{Length:calc:X4}",
-                "{UnitID:X2}",
-                "03",
-                "{StartAddress:X4}",
-                "{RegisterCount:X4}"
-            ],
-            "responseParser": {
-                "validCondition": "resp[7] == 0x03",
-                "dataStartIndex": 9,
-                "dataLengthExpr": "resp[8]",
-                "valueType": "ByteArray"
-            }
-        },
-        "ReadCoils": {
-            "requestTemplate": [
-                "{TransactionID:auto:X4}",
-                "00 00",
-                "{Length:calc:X4}",
-                "{UnitID:X2}",
-                "01",
-                "{StartAddress:X4}",
-                "{BitCount:X4}"
-            ],
-            "responseParser": {
-                "validCondition": "resp[7] == 0x01",
-                "dataStartIndex": 9,
-                "dataLengthExpr": "resp[8]",
-                "valueType": "ByteArray"
-            }
-        },
-        "WriteSingleRegister": {
-            "requestTemplate": [
-                "{TransactionID:auto:X4}",
-                "00 00",
-                "{Length:calc:X4}",
-                "{UnitID:X2}",
-                "06",
-                "{RegisterAddress:X4}",
-                "{Value:X4}"
-            ],
-            "responseParser": {
-                "validCondition": "resp[7] == 0x06",
-                "dataStartIndex": 0,
-                "dataLengthExpr": "0",
-                "valueType": "Empty"
-            }
-        }
-    }
 }])
 
 const searchForm = reactive({
@@ -271,19 +201,23 @@ const pagination = reactive({
 })
 
 // 获取协议列表
-async function fetchList() {
+function fetchList() {
     loading.value = true
     try {
-        // const { data } = await protocolApi.list({
-        //   name: searchForm.name,
-        //   transportType: searchForm.transportType,
-        //   page: pagination.page,
-        //   size: pagination.size
-        // })
-        // // 假设后端返回 { items: [], total: number }
-        // protocolList.value = data.items || []
+        getProtocolList({
+            name: searchForm.name,
+            transportType: searchForm.transportType,
+            page: pagination.page,
+            size: pagination.size
+        }).then(data => {
+
+            console.log(data);
+            protocolList.value = data || []
+        });
+        // 假设后端返回 { items: [], total: number }
         // pagination.total = data.total || 0
     } catch (e) {
+        console.log(e);
         ElMessage.error('获取协议列表失败')
     } finally {
         loading.value = false
@@ -300,7 +234,7 @@ function resetSearch() {
 
 // 编辑协议
 function editProtocol(row) {
-    protocolForm.value = {...row};
+    protocolForm.value = { ...row };
     protocolId.value = "new";
     //router.push(`/protocols/${row.id}`)   // 假设协议有唯一 id 字段
 }

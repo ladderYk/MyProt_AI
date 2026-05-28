@@ -37,7 +37,44 @@
                     <el-input-number v-model="form.transport.defaultPort" :min="1" :max="65535" />
                 </el-form-item>
             </el-card>
-
+            <!-- 连接参数卡片 -->
+            <el-card shadow="never" class="section-card">
+                <template #header>
+                    <div class="card-header">
+                        <el-icon>
+                            <Setting />
+                        </el-icon>
+                        <span>连接参数</span>
+                    </div>
+                </template>
+                <el-row :gutter="20">
+                    <el-col :span="12">
+                        <el-form-item label="响应超时 (ms)">
+                            <el-input-number v-model="form.connection.responseTimeoutMs" :min="100" :max="60000"
+                                step="100" />
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                        <el-form-item label="帧间延迟 (ms)">
+                            <el-input-number v-model="form.connection.interFrameDelayMs" :min="0" :max="1000"
+                                step="10" />
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="12">
+                        <el-form-item label="最大重试次数">
+                            <el-input-number v-model="form.connection.maxRetries" :min="0" :max="10" />
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                        <el-form-item label="重试间隔 (ms)">
+                            <el-input-number v-model="form.connection.retryIntervalMs" :min="1000" :max="60000"
+                                step="1000" />
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-card>
             <!-- Framing 配置卡片 -->
             <el-card shadow="never" class="section-card">
                 <template #header>
@@ -82,6 +119,66 @@
                 </template> </el-card>
 
             <!-- 操作配置卡片 -->
+            <!-- 握手报文卡片 -->
+            <el-card shadow="never" class="section-card">
+                <template #header>
+                    <div class="card-header">
+                        <el-icon>
+                            <Link />
+                        </el-icon>
+                        <span>握手报文</span>
+                        <el-button type="primary" size="small" @click="addHandshakeStep"
+                            style="float:right;">新增步骤</el-button>
+                    </div>
+                </template>
+
+                <div class="handshake-layout" v-if="form.handshake.length > 0">
+                    <!-- 左侧步骤列表 -->
+                    <div class="step-list">
+                        <el-menu :default-active="activeHandshakeIndex" @select="onHandshakeSelect">
+                            <el-menu-item v-for="(step, index) in form.handshake" :key="index" :index="String(index)">
+                                <span class="step-name">{{ step.name || `步骤 ${index + 1}` }}</span>
+                            </el-menu-item>
+                        </el-menu>
+                    </div>
+
+                    <!-- 右侧步骤编辑 -->
+                    <div class="step-editor"
+                        v-if="activeHandshakeIndex !== null && form.handshake[activeHandshakeIndex]">
+                        <el-form label-width="140px" :model="form.handshake[activeHandshakeIndex]">
+                            <el-form-item label="步骤名称">
+                                <el-input v-model="form.handshake[activeHandshakeIndex].name"
+                                    placeholder="如 COTP Connect" />
+                            </el-form-item>
+                            <el-form-item label="请求模板">
+                                <div v-for="(line, idx) in form.handshake[activeHandshakeIndex].requestTemplate"
+                                    :key="idx" style="display:flex; margin-bottom:6px;">
+                                    <el-input v-model="form.handshake[activeHandshakeIndex].requestTemplate[idx]"
+                                        style="flex:1" />
+                                    <el-button @click="removeHandshakeLine(activeHandshakeIndex, idx)"
+                                        :disabled="form.handshake[activeHandshakeIndex].requestTemplate.length <= 1"
+                                        style="margin-left:8px;">删除</el-button>
+                                </div>
+                                <el-button size="small"
+                                    @click="form.handshake[activeHandshakeIndex].requestTemplate.push('')">添加一行</el-button>
+                            </el-form-item>
+                            <el-form-item label="期望响应长度(字节)">
+                                <el-input-number v-model="form.handshake[activeHandshakeIndex].framing.fixedLength"
+                                    :min="0" placeholder="空表示动态解析" />
+                            </el-form-item>
+                            <el-form-item label="有效性条件">
+                                <el-input v-model="form.handshake[activeHandshakeIndex].validCondition"
+                                    placeholder="resp[5] == 0xD0" />
+                            </el-form-item>
+                            <div class="step-editor-actions">
+                                <el-button type="danger"
+                                    @click="deleteHandshakeStep(activeHandshakeIndex)">删除此步骤</el-button>
+                            </div>
+                        </el-form>
+                    </div>
+                </div>
+                <el-empty v-else description="暂无握手报文（连接后直接通信）" />
+            </el-card>
             <!-- 操作定义卡片 -->
             <el-card shadow="never" class="section-card">
                 <template #header>
@@ -173,13 +270,17 @@ const form = reactive({
         byteOrder: 'BigEndian',
         headerLength: null
     },
-    operations: {}  // key -> operation object
+    operations: {},  // key -> operation object
+    handshake: [],  // key -> operation object
+    connection: {}
 })
 if (props.form.protocolName != undefined) {
     form.protocolName = props.form.protocolName;
     form.transport = props.form.transport;
     form.framing = props.form.framing;
     form.operations = props.form.operations;
+    form.handshake = props.form.handshake;
+    form.connection = props.form.connection;
 }
 const activeOpNames = ref('')
 const selectedInitOp = ref('')
@@ -287,6 +388,32 @@ function exportConfig() {
     exportJSON(form, fileName)
     ElMessage.success('配置文件已导出')
 }
+const activeHandshakeIndex = ref(null)   // 当前选中的握手步骤索引
+
+function onHandshakeSelect(index) {
+    activeHandshakeIndex.value = Number(index)
+}
+
+function addHandshakeStep() {
+    form.handshake.push({
+        name: `步骤 ${form.handshake.length + 1}`,
+        requestTemplate: [''],
+        expectedResponseLength: null,
+        validCondition: ''
+    })
+    activeHandshakeIndex.value = form.handshake.length - 1
+}
+
+function deleteHandshakeStep(index) {
+    form.handshake.splice(index, 1)
+    if (activeHandshakeIndex.value === index) {
+        activeHandshakeIndex.value = null
+    }
+}
+
+function removeHandshakeLine(stepIndex, lineIndex) {
+    form.handshake[stepIndex].requestTemplate.splice(lineIndex, 1)
+}
 </script>
 
 <style scoped>
@@ -333,20 +460,23 @@ function exportConfig() {
     margin-top: 30px;
 }
 
-.operation-layout {
+.operation-layout,
+.handshake-layout {
     display: flex;
     gap: 20px;
     min-height: 400px;
 }
 
-.op-list {
+.op-list,
+.step-list {
     width: 220px;
     flex-shrink: 0;
     border-right: 1px solid #ebeef5;
     padding-right: 10px;
 }
 
-.op-list .el-menu {
+.op-list .el-menu,
+.step-list .el-menu {
     border-right: none;
 }
 
@@ -360,7 +490,8 @@ function exportConfig() {
     margin-left: 8px;
 }
 
-.op-editor {
+.op-editor,
+.step-editor {
     flex: 1;
     padding-left: 10px;
 }

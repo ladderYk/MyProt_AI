@@ -1,8 +1,11 @@
-﻿using System;
+﻿using MyProt_AI.ViewModels;
+using Nancy.Hosting.Self;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,8 +27,21 @@ namespace MyProt_AI
         public MainWindow()
         {
             InitializeComponent();
-        }
+            gateway = new ProtocolGateway("./Protocols", "./tags.json");
 
+            Thread.Sleep(200);
+            var url = $"http://localhost:5090";
+
+            NancyHost host = new NancyHost(new Uri(url));
+            host.Start();
+
+            webView.CoreWebView2InitializationCompleted += CoreWebView2InitializationCompleted;
+        }
+        private void CoreWebView2InitializationCompleted(object sender, EventArgs e)
+        {
+            webView.CoreWebView2.AddHostObjectToScript("Protocol", new ProtVM());
+        }
+        public static ProtocolGateway gateway;
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             //    List<string> template = new List<string>() {
@@ -43,7 +59,6 @@ namespace MyProt_AI
         {
             try
             {
-                var gateway = new ProtocolGateway("./Protocols", "./tags.json");
                 TagValue temp = gateway.ReadTagAsync("DB1_Real0");
                 Console.WriteLine($"温度: {temp.Value}");
             }
