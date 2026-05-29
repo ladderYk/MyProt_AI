@@ -1,4 +1,5 @@
-﻿using Nancy;
+﻿using MyProt_AI.ViewModels;
+using Nancy;
 using Nancy.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +32,15 @@ namespace MyProt_AI.WebApi
             Get("/{fileName*}", parameters =>
             {
                 return Response.AsFile(curDir + "/dist/" + parameters.fileName as String);
+            });
+            Get("/getProtocolList", parameters =>
+            {
+                return req("200", "", ProtVM.Instance.getProtocolList(""));
+            });
+            Post("/editProtocol", parameters =>
+            {
+                ProtVM.Instance.editProtocol("");
+                return req("200", "", null);
             });
         }
         private JObject reqBody(string code, string message, JToken data)

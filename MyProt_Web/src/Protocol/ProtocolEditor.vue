@@ -3,7 +3,7 @@
         <!-- 返回按钮 -->
         <el-page-header class="page-header" @back="backFc">
             <template #content>
-                <span class="page-title">协议</span>
+                <span class="page-title">{{ op == 'new' ? '添加' : '编辑' }}协议</span>
             </template>
         </el-page-header>
 
@@ -247,9 +247,10 @@ import { reactive, ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import OperationEditor from './OperationEditor.vue'
 import { exportJSON } from '@/utils/export'
+import { post } from '../utils/api'
 
 const emits = defineEmits(["back"]);
-const props = defineProps(['form'])
+const props = defineProps(['form', "op"])
 
 const backFc = () => emits("back");
 // 当前编辑的名称（与 activeOpName 同步）
@@ -258,7 +259,7 @@ const editingOpName = ref('')
 // const route = useRoute()
 // const router = useRouter()
 // const protocolId = route.params.id
-
+const op = ref(props.op);
 const form = reactive({
     protocolName: '',
     transport: { type: 'Tcp', defaultPort: 102 },
@@ -277,9 +278,9 @@ const form = reactive({
 if (props.form.protocolName != undefined) {
     form.protocolName = props.form.protocolName;
     form.transport = props.form.transport;
-    form.framing = props.form.framing;
-    form.operations = props.form.operations;
-    form.handshake = props.form.handshake;
+    form.framing = props.form.framing ? props.form.framing : {};
+    form.operations = props.form.operations ? props.form.operations : {};
+    form.handshake = props.form.handshake ? props.form.handshake : [];
     form.connection = props.form.connection;
 }
 const activeOpNames = ref('')
@@ -308,10 +309,10 @@ function removeInit(index) {
 
 async function save() {
     const payload = { ...form }
-    if (protocolId === 'new') {
+    if (op.value === 'new') {
         // await protocolApi.create(payload)
     } else {
-        // await protocolApi.update(protocolId, payload)
+        await post("/editProtocol", payload)
     }
     ElMessage.success('保存成功')
     //router.push('/protocols')
@@ -330,9 +331,12 @@ function addOperation() {
     while (form.operations[newName]) newName += '_1'
     form.operations[newName] = {
         requestTemplate: [''],
-        expectedResponseLength: null,
-        validCondition: '',
-        isKeepAlive: false
+        responseParser: {
+            validCondition: "",
+            dataStartIndex: 0,
+            dataLengthExpr: "0",
+            valueType: "Empty"
+        }
     }
     activeOpName.value = newName
 }
@@ -398,7 +402,10 @@ function addHandshakeStep() {
     form.handshake.push({
         name: `步骤 ${form.handshake.length + 1}`,
         requestTemplate: [''],
-        expectedResponseLength: null,
+        framing: {
+            type: "Fixed",
+            fixedLength: 0
+        },
         validCondition: ''
     })
     activeHandshakeIndex.value = form.handshake.length - 1

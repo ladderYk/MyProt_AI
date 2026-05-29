@@ -34,13 +34,8 @@ namespace MyProt_AI
 
             NancyHost host = new NancyHost(new Uri(url));
             host.Start();
-
-            webView.CoreWebView2InitializationCompleted += CoreWebView2InitializationCompleted;
         }
-        private void CoreWebView2InitializationCompleted(object sender, EventArgs e)
-        {
-            webView.CoreWebView2.AddHostObjectToScript("Protocol", new ProtVM());
-        }
+       
         public static ProtocolGateway gateway;
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -80,6 +75,11 @@ namespace MyProt_AI
             foreach (byte b in bytes)
                 sb.Append(b.ToString("x2"));
             return sb.ToString();
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

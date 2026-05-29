@@ -67,7 +67,7 @@
         </el-card>
     </div>
     <template v-else>
-        <ProtocolEditor :form="protocolForm" @back="initEdit" />
+        <ProtocolEditor :form="protocolForm" :op="protocolId" @back="initEdit" />
     </template>
 </template>
 
@@ -76,7 +76,7 @@ import { ref, reactive, onMounted } from 'vue'
 // import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ProtocolEditor from './ProtocolEditor.vue'
-import { getProtocolList, delProtocol } from '../utils/dotnet'
+import { get } from '../utils/api'
 
 const protocolId = ref("");
 const protocolForm = ref({});
@@ -204,20 +204,17 @@ const pagination = reactive({
 function fetchList() {
     loading.value = true
     try {
-        getProtocolList({
+        get("/getProtocolList", {
             name: searchForm.name,
             transportType: searchForm.transportType,
             page: pagination.page,
             size: pagination.size
         }).then(data => {
-
-            console.log(data);
             protocolList.value = data || []
         });
         // 假设后端返回 { items: [], total: number }
         // pagination.total = data.total || 0
     } catch (e) {
-        console.log(e);
         ElMessage.error('获取协议列表失败')
     } finally {
         loading.value = false
@@ -235,7 +232,7 @@ function resetSearch() {
 // 编辑协议
 function editProtocol(row) {
     protocolForm.value = { ...row };
-    protocolId.value = "new";
+    protocolId.value = "edit";
     //router.push(`/protocols/${row.id}`)   // 假设协议有唯一 id 字段
 }
 function addProtocol() {

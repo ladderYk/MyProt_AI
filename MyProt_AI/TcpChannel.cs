@@ -25,7 +25,6 @@ namespace MyProt_AI
 
         public void ConnectAsync(string host, int port, int timeoutMs)
         {
-
             _host = host;
             _port = port;
             _timeoutMs = timeoutMs;

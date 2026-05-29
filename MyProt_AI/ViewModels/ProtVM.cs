@@ -7,51 +7,32 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Shapes;
 
 namespace MyProt_AI.ViewModels
 {
-    [ClassInterface(ClassInterfaceType.AutoDual)]
-    [ComVisible(true)]
     public class ProtVM
     {
-        public string getProtocolList(string sbody)
-        {
-            return req("200", "", JArray.FromObject(MainWindow.gateway.getList()));
-        }
-        //public bool addProt(string sbody)
-        //{
-        //    ProtModel device = JsonConvert.DeserializeObject<ProtModel>(sbody);
-        //    MainWindow.Prots.Add(device);
+        private static readonly ProtVM _Instance = new ProtVM();
+        public static ProtVM Instance => _Instance;
 
-        //    string jsonfile = MainWindow.ProtsFile;
-        //    JArray jObject = JArray.FromObject(MainWindow.Prots);
-        //    File.WriteAllText(jsonfile, jObject.ToString(Formatting.None));
-        //    return true;
-        //}
-        //public bool editProt(string sbody)
-        //{
-        //    ProtModel device = JsonConvert.DeserializeObject<ProtModel>(sbody);
-        //    int typeIndex = MainWindow.Prots.FindIndex(dev => dev.Name == device.Name);
-        //    if (typeIndex > -1)
-        //    {
-        //        string jsonfile = MainWindow.ProtsFile;
-        //        JArray jObject = JArray.FromObject(MainWindow.Prots);
-        //        File.WriteAllText(jsonfile, jObject.ToString(Formatting.None));
-        //        return true;
-        //    }
-        //    return false;
-        //}
-        private JObject reqBody(string code, string message, JToken data)
+        public JArray getProtocolList(string sbody)
         {
-            JObject reqData = new JObject();
-            reqData.Add("code", code);
-            reqData.Add("message", message);
-            reqData.Add("data", data);
-            return reqData;
+            return JArray.FromObject(MainWindow.gateway.getList());
         }
-        private string req(string code, string message, JToken data)
+        public bool editProtocol(string sbody)
         {
-            return JsonConvert.SerializeObject(reqBody(code, message, data));
+            var path = "./Protocols/S7.json";
+            var pathB = "./Protocols/S7_o.json";
+            if (File.Exists(path))
+            {
+                File.Copy(path, pathB, true);
+                //FileStream fs = new FileStream(path, FileMode.Truncate);
+               // StreamWriter sr = new StreamWriter(fs);
+                //sr.Flush(); // 清空缓冲区
+                //sr.BaseStream.SetLength(0); // 将文件长度截断为 0
+            }
+            return true;
         }
     }
 
